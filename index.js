@@ -1,46 +1,24 @@
-/*
+window.focus();
 
-Three.js + Cannon.js video tutorial explaining the source code
-
-Youtube: https://youtu.be/hBiGFpBle7E
-
-In the tutorial, we go through the source code of this game. We cover, how to set up a Three.js scene with box objects, how to add lights, how to set up the camera, how to add animation and event handlers, and finally, we add physics simulation with Cannon.js.
-
-Comparing to the tutorial this version has some extra features: 
-- autopilot mode before the game starts
-- introduction and result screens
-- score indicator showing the level of layers added
-- you can also control the game with touch events and by pressing the space key
-- you can reset the game
-- the game stops once a block went over the stack
-- once the game failed the last block falls down
-- the game reacts to window resizing
-
-Check out my YouTube channel for other game tutorials: https://www.youtube.com/channel/UCxhgW0Q5XLvIoXHAfQXg9oQ
-
-*/
-
-window.focus(); // Capture keys right away (by default focus is on editor)
-
-let camera, scene, renderer; // ThreeJS globals
-let world; // CannonJs world
-let lastTime; // Last timestamp of animation
-let stack; // Parts that stay solid on top of each other
-let overhangs; // Overhanging parts that fall down
-const boxHeight = 1; // Height of each layer
-const originalBoxSize = 3; // Original width and height of a box
+let camera, scene, renderer;
+let world;
+let lastTime;
+let stack;
+let overhangs;
+const boxHeight = 1;
+const originalBoxSize = 3;
 let autopilot;
 let gameEnded;
-let robotPrecision; // Determines how precise the game is on autopilot
+let robotPrecision;
 
 const scoreElement = document.getElementById("score");
 const instructionsElement = document.getElementById("instructions");
 const resultsElement = document.getElementById("results");
 const restart = document.getElementById("restart");
+const bestResult = document.getElementById("best-result");
 
 init();
 
-// Determines how precise the game is on autopilot
 function setRobotPrecision() {
   robotPrecision = Math.random() * 1 - 0.5;
 }
@@ -53,48 +31,33 @@ function init() {
   overhangs = [];
   setRobotPrecision();
 
-  // Initialize CannonJS
   world = new CANNON.World();
-  world.gravity.set(0, -10, 0); // Gravity pulls things down
+  world.gravity.set(0, -10, 0);
   world.broadphase = new CANNON.NaiveBroadphase();
   world.solver.iterations = 40;
 
-  // Initialize ThreeJs
   const aspect = window.innerWidth / window.innerHeight;
   const width = 10;
   const height = width / aspect;
 
   camera = new THREE.OrthographicCamera(
-    width / -2, // left
-    width / 2, // right
-    height / 2, // top
-    height / -2, // bottom
-    0, // near plane
-    100 // far plane
+    width / -2,
+    width / 2,
+    height / 2,
+    height / -2,
+    0,
+    100
   );
-
-  /*
-  // If you want to use perspective camera instead, uncomment these lines
-  camera = new THREE.PerspectiveCamera(
-    45, // field of view
-    aspect, // aspect ratio
-    1, // near plane
-    100 // far plane
-  );
-  */
 
   camera.position.set(4, 4, 4);
   camera.lookAt(0, 0, 0);
 
   scene = new THREE.Scene();
 
-  // Foundation
   addLayer(0, 0, originalBoxSize, originalBoxSize);
 
-  // First layer
   addLayer(-10, 0, originalBoxSize, originalBoxSize, "x");
 
-  // Set up lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
 
@@ -102,8 +65,7 @@ function init() {
   dirLight.position.set(10, 20, 0);
   scene.add(dirLight);
 
-  // Set up renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setAnimationLoop(animation);
   document.body.appendChild(renderer.domElement);
@@ -121,48 +83,42 @@ function startGame() {
   if (scoreElement) scoreElement.innerText = 0;
 
   if (world) {
-    // Remove every object from world
     while (world.bodies.length > 0) {
       world.remove(world.bodies[0]);
     }
   }
 
   if (scene) {
-    // Remove every Mesh from the scene
     while (scene.children.find((c) => c.type == "Mesh")) {
       const mesh = scene.children.find((c) => c.type == "Mesh");
       scene.remove(mesh);
     }
 
-    // Foundation
     addLayer(0, 0, originalBoxSize, originalBoxSize);
 
-    // First layer
     addLayer(-10, 0, originalBoxSize, originalBoxSize, "x");
   }
 
   if (camera) {
-    // Reset camera positions
     camera.position.set(4, 4, 4);
     camera.lookAt(0, 0, 0);
   }
 }
 
 function addLayer(x, z, width, depth, direction) {
-  const y = boxHeight * stack.length; // Add the new box one layer higher
+  const y = boxHeight * stack.length;
   const layer = generateBox(x, y, z, width, depth, false);
   layer.direction = direction;
   stack.push(layer);
 }
 
 function addOverhang(x, z, width, depth) {
-  const y = boxHeight * (stack.length - 1); // Add the new box one the same layer
+  const y = boxHeight * (stack.length - 1);
   const overhang = generateBox(x, y, z, width, depth, true);
   overhangs.push(overhang);
 }
 
 function generateBox(x, y, z, width, depth, falls) {
-  // ThreeJS
   const geometry = new THREE.BoxGeometry(width, boxHeight, depth);
   const color = new THREE.Color(`hsl(${30 + stack.length * 4}, 100%, 50%)`);
   const material = new THREE.MeshLambertMaterial({ color });
@@ -170,13 +126,12 @@ function generateBox(x, y, z, width, depth, falls) {
   mesh.position.set(x, y, z);
   scene.add(mesh);
 
-  // CannonJS
   const shape = new CANNON.Box(
     new CANNON.Vec3(width / 2, boxHeight / 2, depth / 2)
   );
-  let mass = falls ? 5 : 0; // If it shouldn't fall then setting the mass to zero will keep it stationary
-  mass *= width / originalBoxSize; // Reduce mass proportionately by size
-  mass *= depth / originalBoxSize; // Reduce mass proportionately by size
+  let mass = falls ? 5 : 0;
+  mass *= width / originalBoxSize;
+  mass *= depth / originalBoxSize;
   const body = new CANNON.Body({ mass, shape });
   body.position.set(x, y, z);
   world.addBody(body);
@@ -194,18 +149,14 @@ function cutBox(topLayer, overlap, size, delta) {
   const newWidth = direction == "x" ? overlap : topLayer.width;
   const newDepth = direction == "z" ? overlap : topLayer.depth;
 
-  // Update metadata
   topLayer.width = newWidth;
   topLayer.depth = newDepth;
 
-  // Update ThreeJS model
   topLayer.threejs.scale[direction] = overlap / size;
   topLayer.threejs.position[direction] -= delta / 2;
 
-  // Update CannonJS model
   topLayer.cannonjs.position[direction] -= delta / 2;
 
-  // Replace shape to a smaller one (in CannonJS you can't simply just scale a shape)
   const shape = new CANNON.Box(
     new CANNON.Vec3(newWidth / 2, boxHeight / 2, newDepth / 2)
   );
@@ -260,11 +211,10 @@ function splitBlockAndAddNextOneIfOverlaps() {
 
     addOverhang(overhangX, overhangZ, overhangWidth, overhangDepth);
 
-    // Next layer
     const nextX = direction == "x" ? topLayer.threejs.position.x : -10;
     const nextZ = direction == "z" ? topLayer.threejs.position.z : -10;
-    const newWidth = topLayer.width; // New layer has the same size as the cut top layer
-    const newDepth = topLayer.depth; // New layer has the same size as the cut top layer
+    const newWidth = topLayer.width;
+    const newDepth = topLayer.depth;
     const nextDirection = direction == "x" ? "z" : "x";
 
     if (scoreElement) scoreElement.innerText = stack.length - 1;
@@ -277,7 +227,6 @@ function splitBlockAndAddNextOneIfOverlaps() {
 function missedTheSpot() {
   const topLayer = stack[stack.length - 1];
 
-  // Turn to top layer into an overhang and let it fall down
   addOverhang(
     topLayer.threejs.position.x,
     topLayer.threejs.position.z,
@@ -299,8 +248,6 @@ function animation(time) {
     const topLayer = stack[stack.length - 1];
     const previousLayer = stack[stack.length - 2];
 
-    // The top level box should move if the game has not ended AND
-    // it's either NOT in autopilot or it is in autopilot and the box did not yet reach the robot position
     const boxShouldMove =
       !gameEnded &&
       (!autopilot ||
@@ -310,24 +257,19 @@ function animation(time) {
               robotPrecision));
 
     if (boxShouldMove) {
-      // Keep the position visible on UI and the position in the model in sync
       topLayer.threejs.position[topLayer.direction] += speed * timePassed;
       topLayer.cannonjs.position[topLayer.direction] += speed * timePassed;
 
-      // If the box went beyond the stack then show up the fail screen
       if (topLayer.threejs.position[topLayer.direction] > 10) {
         missedTheSpot();
       }
     } else {
-      // If it shouldn't move then is it because the autopilot reached the correct position?
-      // Because if so then next level is coming
       if (autopilot) {
         splitBlockAndAddNextOneIfOverlaps();
         setRobotPrecision();
       }
     }
 
-    // 4 is the initial camera height
     if (camera.position.y < boxHeight * (stack.length - 2) + 4) {
       camera.position.y += speed * timePassed;
     }
@@ -339,9 +281,8 @@ function animation(time) {
 }
 
 function updatePhysics(timePassed) {
-  world.step(timePassed / 1000); // Step the physics world
+  world.step(timePassed / 1000);
 
-  // Copy coordinates from Cannon.js to Three.js
   overhangs.forEach((element) => {
     element.threejs.position.copy(element.cannonjs.position);
     element.threejs.quaternion.copy(element.cannonjs.quaternion);
@@ -349,7 +290,6 @@ function updatePhysics(timePassed) {
 }
 
 window.addEventListener("resize", () => {
-  // Adjust camera
   console.log("resize", window.innerWidth, window.innerHeight);
   const aspect = window.innerWidth / window.innerHeight;
   const width = 10;
@@ -358,7 +298,6 @@ window.addEventListener("resize", () => {
   camera.top = height / 2;
   camera.bottom = height / -2;
 
-  // Reset renderer
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.render(scene, camera);
 });

@@ -1,29 +1,47 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap");
-
+html {
+  height: 100dvh;
+  overflow: hidden;
+  max-width: 100%;
+}
 body {
   margin: 0;
   color: white;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   cursor: pointer;
+  background: linear-gradient(
+    180deg,
+    rgb(21, 74, 189) 0.1%,
+    rgb(26, 138, 211) 51.5%,
+    rgb(72, 177, 234) 100.2%
+  );
+  /* height: 100dvh; */
+  overflow: hidden;
 }
 
 #instructions {
   display: none;
 }
 
-#results,
-body:hover #instructions {
-  position: absolute;
+#instructions {
+  position: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
   width: 100%;
-  background-color: rgba(20, 20, 20, 0.75);
+  background: #0000003c;
 }
 
-a:visited {
-  color: inherit;
+.content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.content-alert {
+  font-size: 200%;
 }
 
 #results {
@@ -39,7 +57,11 @@ a:visited {
 }
 
 .content {
-  position: absolute;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(300px, 100%);
 }
 
 .motions {
@@ -47,6 +69,7 @@ a:visited {
   align-items: center;
   gap: 20px;
 }
+#max-score,
 #score {
   position: absolute;
   color: white;
@@ -56,81 +79,98 @@ a:visited {
   right: 30px;
 }
 
-#youtube,
-#youtube-card {
-  display: none;
-  color: black;
+#score::before {
+  content: "score";
+  right: 0;
+  top: -20px;
+  font-size: 16px;
+  position: absolute;
 }
 
-@media (min-height: 425px) {
-  /** Youtube logo by https://codepen.io/alvaromontoro */
-  #youtube {
-    z-index: 50;
-    width: 100px;
-    height: 70px;
-    position: fixed;
-    bottom: 20px;
-    transform: scale(0.8);
-    transition: transform 0.5s;
+#max-score {
+  right: initial;
+  left: 30px;
+}
+
+#start,
+#restart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 150%;
+  padding: 10px 30px;
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    rgba(135, 255, 127, 1) 0%,
+    rgba(127, 255, 158, 1) 66%
+  );
+  color: #5c648b;
+}
+
+#max-score {
+  position: relative;
+}
+
+#max-score:before {
+  content: "Best result:";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 16px;
+}
+
+.tooltip {
+  z-index: 1;
+  opacity: 0.4;
+  /* position: relative; */
+
+  width: 100%;
+  padding: 0px 20px;
+
+  background: #333;
+  color: #e086d3;
+  border-radius: 9px;
+  font: 16px;
+
+  transform: translateY(9px);
+  transition: all 0.3s ease-in-out;
+
+  box-shadow: 0 0 3px rgba(56, 54, 54, 0.86);
+  transform: translateY(-6px);
+  top: -40px;
+  position: relative;
+}
+
+.tooltip::after {
+  content: " ";
+  width: 0;
+  height: 0;
+
+  border-style: solid;
+  border-width: 12px 12.5px 0 12.5px;
+  border-color: #333 transparent transparent transparent;
+  position: absolute;
+  bottom: -10%;
+  left: 47%;
+}
+
+.tooltip {
+  transform: translateY(-10px);
+  opacity: 1;
+  transition: 0.3s linear;
+  animation: odsoky 1s ease-in-out infinite alternate;
+}
+@keyframes odsoky {
+  0% {
+    transform: translateY(6px);
   }
 
-  #youtube {
-    display: block;
-    background: red;
-    right: 20px;
-    border-radius: 50% / 11%;
+  100% {
+    transform: translateY(1px);
   }
+}
 
-  #youtube:hover,
-  #youtube:focus {
-    transform: scale(0.9);
-    color: black;
-  }
-
-  #youtube::before {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 7.5%;
-    left: -6%;
-    width: 112%;
-    height: 85%;
-    background: red;
-    border-radius: 9% / 50%;
-  }
-
-  #youtube::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 20px;
-    left: 40px;
-    width: 45px;
-    height: 30px;
-    border: 15px solid transparent;
-    box-sizing: border-box;
-    border-left: 30px solid white;
-  }
-
-  #youtube span {
-    font-size: 0;
-    position: absolute;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-  }
-
-  #youtube:hover + #youtube-card {
-    z-index: 49;
-    display: block;
-    position: fixed;
-    bottom: 12px;
-    width: 300px;
-    background-color: white;
-  }
-
-  #youtube:hover + #youtube-card {
-    right: 10px;
-    padding: 25px 130px 25px 25px;
-  }
+.tooltip p:nth-child(2) {
+  color: white;
 }
